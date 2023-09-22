@@ -20,4 +20,16 @@ onMounted(() => {
   </div>
 </template>
 
-<style scoped></style>
+<style scoped>
+.chip8-display {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+}
+
+.canvas {
+  display: block;
+  width: 100%;
+}
+</style>

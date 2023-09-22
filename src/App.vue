@@ -11,4 +11,9 @@ import Chip8 from './pages/Chip8.vue'
 </template>
 
 <style scoped>
+.main-content-container {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
 </style>

@@ -3,25 +3,30 @@ import { onMounted } from 'vue';
 import Chip8 from '../core/Chip8';
 import Memory from '../core/Memory';
 import Display from '../components/Display.vue';
+import Keypad from '../components/Keypad.vue';
 
-let debugging = true;
+let debugging = false;
 
-type DisplayAPI = {
+export type DisplayAPI = {
   ctx: CanvasRenderingContext2D,
   canvas: HTMLCanvasElement
 }
 
-const memory = new Memory();
-const chip8 = new Chip8(memory, debugging);
+export type KeypadAPI = {
+  isKeyPressed: (key: number) => boolean
+}
 
 let displayAPI: DisplayAPI;
+let keypadAPI: KeypadAPI;
 
-function initDisplayAPI(api: DisplayAPI) {
-  displayAPI = api;
-}
+const initDisplayAPI = (api: DisplayAPI) => displayAPI = api;
+const initKeypadAPI = (api: KeypadAPI) => keypadAPI = api;
 
 onMounted(async () => {
   const { ctx, canvas } = displayAPI;
+
+  const memory = new Memory();
+  const chip8 = new Chip8(memory, keypadAPI, debugging);
 
   const response = await fetch('/roms/Astro Dodge [Revival Studios, 2008].ch8');
   const buffer = await response.arrayBuffer();
@@ -29,7 +34,7 @@ onMounted(async () => {
   memory.loadProgram(new Uint8Array(buffer));
 
   setInterval(() => {
-    for (var i = 0; i < 6; i++) {
+    for (var i = 0; i < 8; i++) {
       chip8.timerStep();
       chip8.tick();
 
@@ -59,16 +64,18 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="canvas-container">
+  <div class="emu-container">
     <Display @initDisplayAPI="initDisplayAPI" />
+    <Keypad @initKeypadAPI="initKeypadAPI"/>
   </div>
 </template>
 
 <style scoped>
-.canvas-container {
+.emu-container {
   display: flex;
   flex-direction: column;
-  align-items: center;
+  justify-content: center;
+  max-width: 540px;
 }
 
 .canvas {

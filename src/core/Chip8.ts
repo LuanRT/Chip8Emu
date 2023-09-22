@@ -1,3 +1,4 @@
+import type { KeypadAPI } from "../pages/Chip8.vue";
 import Memory from "./Memory";
 
 export default class Chip8 {
@@ -14,12 +15,14 @@ export default class Chip8 {
   public shouldDraw: boolean = false;
   public shouldClear: boolean = false;
   public debugMode: boolean;
+  public keypad: KeypadAPI;
 
-  constructor(memory: Memory, debugMode: boolean = false) {
+  constructor(memory: Memory, keypad: KeypadAPI, debugMode: boolean = false) {
     this.memory = memory;
     this.V = new Uint8Array(16);
     this.stack = new Uint16Array(16);
     this.gfx = new Uint8Array((64 * 5) * (32 * 5));
+    this.keypad = keypad;
 
     this.I = 0x000;
     this.PC = 0x200;
@@ -219,11 +222,36 @@ export default class Chip8 {
 
         this.log(`DRW V${xReg.toString(16)}, V${yReg.toString(16)}, `, height.toString(16));
         break;
+      case 0xE:
+        switch (opcode & 0x00FF) {
+          case 0x9E:
+            if (this.keypad.isKeyPressed(this.V[xReg])) {
+              this.PC += 2;
+            }
+            this.log(`SKP V${xReg.toString(16)}`);
+            break;
+          case 0xA1:
+            if (!this.keypad.isKeyPressed(this.V[xReg])) {
+              this.PC += 2;
+            }
+            this.log(`SKNP V${xReg.toString(16)}`);
+            break;
+        }
+        break;
       case 0xF:
         switch (opcode & 0x00FF) {
           case 0x07:
             this.V[xReg] = (this.delayTimer & 0xFF);
             this.log(`MOV V${xReg.toString(16)}, DT`);
+            break;
+          case 0x0A:
+            for (let i = 0; i <= 0xF; i++) {
+              if (this.keypad.isKeyPressed(i)) {
+                this.V[xReg] = i;
+                break;
+              }
+            }
+            this.log(`MOV V${xReg.toString(16)}, K`);
             break;
           case 0x15:
             this.delayTimer = this.V[xReg];
@@ -238,13 +266,13 @@ export default class Chip8 {
             this.log(`ADD I, V${xReg.toString(16)}`);
             break;
           case 0x29:
-            this.I = this.memory.read(0x50);
+            this.I = this.V[xReg] * 5;
             this.log(`MOV I, V${xReg.toString(16)}`);
             break;
           case 0x33:
-            this.memory.write(this.I, (this.V[xReg] / 100 % 10));
-            this.memory.write(this.I + 1, (this.V[xReg] / 10 % 10));
-            this.memory.write(this.I + 2, (this.V[xReg] / 1 % 10));
+            this.memory.write(this.I, (this.V[xReg] / 100));
+            this.memory.write(this.I + 1, ((this.V[xReg] % 100) / 10));
+            this.memory.write(this.I + 2, ((this.V[xReg] % 100) % 10));
             this.log(`BCD V${xReg.toString(16)}`);
             break;
           case 0x55:
